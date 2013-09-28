@@ -15,7 +15,7 @@
 #define SPI_EE_DDR            DDRB    
 #define SPI_EE_PORT           PORTB   
 
-#define SPI_EE_CS_PIN                         6
+#define SPI_EE_CS_PIN                         1
 
 
 #define EE_CS_HI SPI_EE_PORT |= (1<<SPI_EE_CS_PIN)

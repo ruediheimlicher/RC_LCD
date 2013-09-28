@@ -55,7 +55,9 @@ void spieeprom_init()
 {
    
    SPCR=0;
-   SPCR = (1<<SPE)|(1<<MSTR)|(1<<SPR0)|(1<<SPR1);
+   SPCR = (1<<SPE)|(1<<MSTR);
+   //   SPCR |= (1<<SPR0);
+   SPCR |= (1<<SPR1);
    
    // CPOL 0, CPHA 0 > CKE 1 (Microchip bezeichnung)
  

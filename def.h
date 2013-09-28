@@ -49,33 +49,34 @@
 #define CMD_PIN             PIND    //    PINB
 
 
-#define KANAL_PORT            PORTB   //    PORTB
-#define KANAL_DDR             DDRB    //    DDRB
+#define MASTER_PORT      PORTB   //    PORTB
+#define MASTER_DDR       DDRB    //    DDRB
+#define MASTER_PIN      PINB
+
+#define MASTER_EN_PIN         7 // Mit PinChange-Interrupt
+#define MASTER_EN_BIT         0 // Master erlaubt SPI
+#define SUB_START_BIT       1 // Slave kann starten
+#define SUB_END_BIT         2 // Slave ist fertig
+
+#define SUB_TASK_BIT         3 // Slave hat Aufgaben
 
 
-#define KANAL_PIN          4
-#define KANAL_LO           KANAL_PORT &= ~(1<<KANAL_PIN)
-#define KANAL_HI           KANAL_PORT |= (1<<KANAL_PIN)
+#define SUB_BUSY_PIN          6 // Sub ist busy
+
+         
+#define MASTER_EN_HI           MASTER_PORT & (1<<MASTER_EN_PIN)
 
 
 // ADC
 // CNC12
-#define ADC_PORT            PORTF   //    PORTF
-#define ADC_DDR             DDRF    //    DDRF
-#define ADC_PIN             PINF    //    PINF
+#define ADC_PORT            PORTC   //
+#define ADC_DDR             DDRC    //    
+#define ADC_PIN             PINC    //    
 
 
 // Bit
 
-#define ADC_START 0  // Start Messung Batteriespannung mit internem ADC
-
-#define POT_START 0  //    Start Messung Potentiometer
-#define POT_MITTE 7  //    Mittelwerte der Potentiometer speichern
-
-#define ANZ_POT   6
-
-#define POT_FAKTOR 1.20
-
+// EEPROM
 
 #define EE_WREN   0
 #define EE_WRITE  1

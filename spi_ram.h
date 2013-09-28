@@ -15,7 +15,7 @@
 #define SPI_RAM_DDR            DDRB    //DDR B
 #define SPI_RAM_PORT           PORTB   //PORT B
 
-#define SPI_RAM_CS_PIN                         7
+#define SPI_RAM_CS_PIN                         2
 
 
 #define RAM_CS_HI SPI_RAM_PORT |= (1<<SPI_RAM_CS_PIN)
