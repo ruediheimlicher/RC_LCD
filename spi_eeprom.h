@@ -32,7 +32,6 @@
 //                 1 - sequential mode
 //                 2 - page mode
 //  uint8_t enhold - if 1: disables the hold pin, 0 enables
-//void spiram_init(uint8_t mode, uint8_t enhold);
 
 void spieeprom_init(void);
                  

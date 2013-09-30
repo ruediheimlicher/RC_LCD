@@ -43,6 +43,7 @@ const uint8_t __HOLD_MASK = 0b00000001;
 
 uint8_t spi_send(uint8_t value)
 {
+
    uint8_t result;
    
    //shift the first byte of the value

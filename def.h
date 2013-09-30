@@ -31,8 +31,8 @@
 
 
 
-#define TASTE0				   2
-#define TASTE1             3
+//#define TASTE0				   2
+//#define TASTE1             3
 
 // SPI
 
@@ -48,10 +48,16 @@
 #define CMD_DDR             DDRD    //    DDRB
 #define CMD_PIN             PIND    //    PINB
 
+#define EXTERN_PORT          PORTD
+#define EXTERN_PIN           PIND
 
-#define MASTER_PORT      PORTB   //    PORTB
-#define MASTER_DDR       DDRB    //    DDRB
-#define MASTER_PIN      PINB
+#define INT0_PIN           2
+
+
+
+#define MASTER_PORT        PORTB   //    PORTB
+#define MASTER_DDR         DDRB    //    DDRB
+#define MASTER_PIN         PINB
 
 #define MASTER_EN_PIN         7 // Mit PinChange-Interrupt
 #define MASTER_EN_BIT         0 // Master erlaubt SPI
@@ -59,6 +65,8 @@
 #define SUB_END_BIT         2 // Slave ist fertig
 
 #define SUB_TASK_BIT         3 // Slave hat Aufgaben
+
+#define SUB_LCD_BIT         4 // Slave soll auf LCD schreiben
 
 
 #define SUB_BUSY_PIN          6 // Sub ist busy

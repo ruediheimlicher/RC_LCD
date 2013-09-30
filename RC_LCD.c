@@ -29,7 +29,7 @@ uint16_t loopCount1=0;
 uint16_t loopCount2=0;
 
 
-#define LOOPDELAY 0
+#define LOOPDELAY 20
 
 volatile uint16_t RAM_Array[SPI_BUFSIZE];
 
@@ -47,7 +47,7 @@ volatile   uint8_t eeprom_testdata =0x00;
 volatile   uint8_t eeprom_testaddress =0x00;
 
 
-void slaveinit(void)
+void subinit(void)
 {
 	LOOPLED_DDR |= (1<<LOOPLED_PIN);
    LOOPLED_PORT |= (1<<LOOPLED_PIN);
@@ -67,9 +67,13 @@ void slaveinit(void)
    /**
 	 * Pin Change Interrupt enable on PCINT1 (PB7)
 	 */
+   /*
    PCIFR |= (1<<PCIF0);
    PCICR |= (1<<PCIE0);
 	PCMSK0 |= (1<<PCINT7);
+    */
+   
+   
 
    MASTER_DDR &= ~(1 << MASTER_EN_PIN); // Clear the PB7 pin
    // PB7 (PCINT7 pin) are now inputs
@@ -77,13 +81,18 @@ void slaveinit(void)
    MASTER_PORT |= (1 << MASTER_EN_PIN) ; // turn On the Pull-up
    // PB7 are now inputs with pull-up enabled
 
-   MASTER_DDR |= (1 << SUB_BUSY_PIN); // DIS-Pin als Ausgang
+   MASTER_DDR |= (1 << SUB_BUSY_PIN); // BUSY-Pin als Ausgang
    // PB7 (PCINT7 pin) are now inputs
    
    MASTER_PORT |= (1 << SUB_BUSY_PIN) ; // turn On the Pull-up
    // PB7 are now inputs with pull-up enabled
 
-
+   CMD_DDR &= ~(1<<INT0_PIN);
+   EICRA |= (1<< ISC01);
+   //EICRA |= (1<< ISC01);
+	// turn on interrupts!
+   
+	EIMSK |= (1<<INT0); //	INT0 enable
 
    //Pin 0 von   als Ausgang fuer OSZI
 	OSZIPORTDDR |= (1<<OSZI_PULS_A);	//Pin 0 von  als Ausgang fuer LED TWI
@@ -167,37 +176,64 @@ void spi_start(void) // SPI-Pins aktivieren
    // EE-CS bereit
    SPI_EE_DDR |= (1<<SPI_EE_CS_PIN); // EE-CS-PIN Ausgang
    SPI_EE_PORT |= (1<<SPI_EE_CS_PIN);// HI
+   
+   
 }
 
 void spi_end(void) // SPI-Pins deaktivieren
 {
+   
+   OSZI_A_LO;
+   SPCR=0;
+   //SPI_DDR =0;
    SPI_DDR &= ~(1<<SPI_MOSI_PIN); // MOSI off
    SPI_DDR &= ~(1<<SPI_SCK_PIN); // SCK off
+   SPI_PORT &= ~(1<<SPI_SCK_PIN);
    SPI_DDR &= ~(1<<SPI_SS_PIN); // SS off
    
    SPI_RAM_DDR &= ~(1<<SPI_RAM_CS_PIN); // RAM-CS-PIN off
+   SPI_RAM_PORT |= (1<<SPI_RAM_CS_PIN);
+   
    SPI_EE_DDR &= ~(1<<SPI_EE_CS_PIN); // EE-CS-PIN off
    
+   OSZI_A_HI;
 }
 
 
 //https://sites.google.com/site/qeewiki/books/avr-guide/external-interrupts-on-the-atmega328
 
+
 ISR (PCINT0_vect)
 {
-   //MASTER_EN_PORT ^= (1 << SUB_BUSY_PIN) ;
    uint8_t changedbits;
    changedbits = PINB ^ portbhistory;
    portbhistory = PINB;
    
+   if(MASTER_PIN & (1 << MASTER_EN_PIN))// LOW to HIGH pin change, Sub OFF
+   {
+      masterstatus &= ~(1<<SUB_TASK_BIT);
+      
+   }
+   else // HIGH to LOW pin change, Sub ON 
+   {
+      masterstatus |= (1<<SUB_TASK_BIT);
+      
+
+   }
    
+   
+   /*
    if(changedbits & (1 << MASTER_EN_PIN))
    {
+      
+      
+      
       //MASTER_EN_PORT ^= (1 << SUB_BUSY_PIN) ;
-      /* PCINT7 changed Master aendert Enable*/
+      // PCINT7 changed Master aendert Enable
       
       if ((MASTER_PIN & (1 << MASTER_EN_PIN) )) // EN-Pin Hi, OFF
       {
+         
          if (masterstatus & (1<< MASTER_EN_BIT)) // bit ist gesetzt
          {
             
@@ -206,35 +242,45 @@ ISR (PCINT0_vect)
          {
             
          }
-          
+         
       }
       else
       {
+         
+         //_delay_us(10);
          if (masterstatus & (1<<MASTER_EN_BIT)) // bit ist gesetzt
          {
+            //OSZI_B_LO;
             //masterstatus |= (1<< MASTER_EN_BIT);
-            //MASTER_EN_PORT &= ~(1 << SUB_BUSY_PIN) ;
-
+            //MASTER_PORT &= ~(1 << SUB_BUSY_PIN) ;
+            
          }
          else // Bit ist noch nicht gesetzt
          {
-            masterstatus |= (1<<MASTER_EN_BIT);
-           MASTER_PORT &= ~(1 << SUB_BUSY_PIN) ;
+            //OSZI_B_LO;
+            
+            //masterstatus |= (1<<SUB_START_BIT); // SUb beginnt
+            
+            
+            //MASTER_PORT &= ~(1 << SUB_BUSY_PIN) ;
             //MASTER_PORT ^= (1 << SUB_BUSY_PIN) ;
-
+            
          }
          //MASTER_EN_PORT ^= (1 << SUB_BUSY_PIN) ;
-
+         
          
          
          //MASTER_EN_PORT |= (1 << SUB_BUSY_PIN) ;
       }
+      
+      
    }
+   */
    
-    
 }
 
 
+/*
 ISR(PCINT1_vect)
 {
 	if (PINB & _BV(PB7))
@@ -243,18 +289,26 @@ ISR(PCINT1_vect)
 
    }
 }
+*/
 
+ISR(INT0_vect)
+{                        //Ext.Interrupt auf INT0
+   OSZI_B_LO;
+   masterstatus |= (1<<SUB_TASK_BIT);
+   //OSZI_B_HI;
+}
 
 int main (void)
 {
+	subinit();
 	
-	slaveinit();
-	
-   SPI_PORT_Init(); //Pins fuer SPI aktivieren, incl. SS
+   //SPI_PORT_Init(); //Pins fuer SPI aktivieren, incl. SS
    
-   SPI_RAM_init(); // SS-Pin fuer RAM aktivieren
+   //SPI_RAM_init(); // SS-Pin fuer RAM aktivieren
    
-   SPI_EE_init(); // SS-Pin fuer EE aktivieren
+   //SPI_EE_init(); // SS-Pin fuer EE aktivieren
+   
+//   spi_end(); //
    
 	lcd_initialize(LCD_FUNCTION_8x2, LCD_CMD_ENTRY_INC, LCD_CMD_ON);
 	lcd_puts("Guten Tag\0");
@@ -263,7 +317,7 @@ int main (void)
 	lcd_cls();
    lcd_gotoxy(0,0);
 	lcd_puts("SPI_LCD\0");
-   volatile uint8_t outcounter=0;
+   volatile uint16_t outcounter=0;
    volatile uint8_t indata=0;
    sei();
     
@@ -272,6 +326,7 @@ int main (void)
    volatile   uint8_t testdata =0x00;
    volatile   uint8_t testaddress =0x00;
    volatile   uint8_t errcount =0x00;
+   volatile   uint8_t master_errcount =0x00;
 	while (1) 
 	{
 		loopCount0 ++;
@@ -298,47 +353,26 @@ int main (void)
          
 			
 			loopCount0 =0;
-		}
+		} // if loopcount0
       
-      
-      
-      if (MASTER_PIN & (1 << MASTER_EN_PIN)) // Zeitfenster ist geschlossen, reset Slave
+     
+       
       {
-         _delay_us(5);
-         masterstatus |= (1<<SUB_END_BIT);
-         masterstatus &= ~(1<<SUB_START_BIT);
-         MASTER_PORT |= (1 << SUB_BUSY_PIN) ;
          
-         if (outcounter%0xFFFF == 0)
+
+         if ((masterstatus & (1<<SUB_TASK_BIT)))
          {
-            testdata++;
-            testaddress--;
+            //OSZI_B_HI;
+             _delay_ms(1);
+            masterstatus &= ~(1<<SUB_TASK_BIT); // start-bit zuruecksetzen
+            MASTER_PORT &= ~(1 << SUB_BUSY_PIN)  ; // LO, busy-Meldung an Master
             
             
-            lcd_gotoxy(0,0);
-            //lcd_putint(testdata);
-            //lcd_putc('*');
-            lcd_putint(ram_indata);
-            lcd_putc('+');
-            lcd_putint(errcount);
-            //lcd_putc('+');
+            spi_start();
             
-         }
-         outcounter++;
-
-
-      }
-      else  // Zeitfenster vom master ist offen
-      {
            
-         if (!(masterstatus & (1<<SUB_START_BIT)))
-         {
-            _delay_us(1);
             
-            MASTER_PORT &= ~(1 << SUB_BUSY_PIN) ; // busy-Meldung an Master
-            
-            masterstatus |= (1<<SUB_START_BIT);
-            masterstatus &= ~(1<<SUB_END_BIT);
+            OSZI_B_HI;
             
             // Task des Slave mit RAM und EEPROM erledigen
             
@@ -348,13 +382,18 @@ int main (void)
             spiram_init();
             
             
+            SPI_PORT_Init(); //Pins fuer SPI aktivieren, incl. SS
+            
+            SPI_RAM_init(); // SS-Pin fuer RAM aktivieren
+
+            
             // statusregister schreiben
              RAM_CS_LO;
              _delay_us(LOOPDELAY);
              spiram_write_status(0x00);
              _delay_us(LOOPDELAY);
              RAM_CS_HI; // SS HI End
-             _delay_us(2);
+             _delay_us(20);
             
             // testdata in-out
             RAM_CS_LO;
@@ -366,7 +405,7 @@ int main (void)
             RAM_CS_HI;
             
             // Kontrolle
-            _delay_us(2);
+            _delay_us(20);
             RAM_CS_LO;
             _delay_us(LOOPDELAY);
             //     OSZI_B_LO;
@@ -375,20 +414,90 @@ int main (void)
             _delay_us(LOOPDELAY);
             //     OSZI_B_HI;
             RAM_CS_HI;
+            //OSZI_A_HI;
             // Fehler zaehlen
             if (!(testdata == ram_indata))
             {
                errcount++;
             }
+            
+            // Kontrolle
+            master_errcount=0;
+            _delay_us(20);
+            RAM_CS_LO;
+            _delay_us(LOOPDELAY);
+            //     OSZI_B_LO;
+            _delay_us(LOOPDELAY);
+            master_errcount = spiram_rdbyte(0);
+            _delay_us(LOOPDELAY);
 
             
             
+            MASTER_PORT |= (1 << SUB_BUSY_PIN) ; // HI,  end- busy-Meldung an Master
             
-            MASTER_PORT |= (1 << SUB_BUSY_PIN) ; // end- busy-Meldung an Master
-            //masterstatus &= ~(1<<SUB_START_BIT);
+            // Task erledigt
+            masterstatus &= ~(1<<SUB_TASK_BIT);
+            //OSZI_A_HI;
+            
+            spi_end();
+         
          }
+         else
+         {
+            
+         }
+         //OSZI_B_HI;
          // End Task 
       }
+      
+      
+      //if (MASTER_PIN & (1 << MASTER_EN_BIT)) // Zeitfenster ist geschlossen, reset Slave
+      if (PIND |(1<<2))
+      {
+         
+         
+         //        _delay_us(5);
+         //OSZI_A_LO;
+         //         spi_end(); //
+         //OSZI_A_HI;
+         
+         // Task muss erledigt sein
+         //masterstatus &= ~(1<<SUB_TASK_BIT);
+         
+         //masterstatus |= (1<<SUB_END_BIT);
+         //
+         //MASTER_PORT |= (1 << SUB_BUSY_PIN) ;
+         
+         if (outcounter%0xFFFF == 0)
+         {
+            masterstatus |= (1<<SUB_LCD_BIT);
+            
+             lcd_gotoxy(0,0);
+            /*
+            // lcd_putint(testdata);
+            // lcd_putc('*');
+            lcd_putint(ram_indata);
+            lcd_putc('+');
+            
+              lcd_putint(errcount);
+            //  lcd_putc('+');
+            */
+            lcd_putint2(ram_indata);
+            lcd_putc(' ');
+            lcd_putint2(errcount);
+            lcd_putc(' ');
+            lcd_putint2(master_errcount);
+            testdata++;
+            testaddress--;
+            
+            
+         }
+         
+         outcounter++;
+         
+      }
+      //else  // Zeitfenster vom master ist offen
+
       
       
       

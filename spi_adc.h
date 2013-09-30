@@ -20,10 +20,11 @@
 
 #define SPI_DDR            DDRB    //DDRB
 #define SPI_PORT           PORTB   //PORTB
-#define SPI_SS_PIN                 0
-#define SPI_SCK_PIN                1
-#define SPI_MOSI_PIN               2
-#define SPI_MISO_PIN               3
+#define SPI_SS_PIN                 2
+
+#define SPI_MOSI_PIN               3
+#define SPI_MISO_PIN               4
+#define SPI_SCK_PIN                5
 
 // SPI clock modes aus spi.h
 #define SPI_MODE_0 0x00 /* Sample (Rising) Setup (Falling) CPOL=0, CPHA=0 */
